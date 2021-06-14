@@ -31,7 +31,6 @@ impl Default for BughouseBoard {
 
 impl BughouseBoard {
     
-pub const NUM_PIECES: usize = 6;
     pub fn is_legal(&self, m: BughouseMove) -> bool {
         true
     }
