@@ -1,12 +1,13 @@
 use crate::bughouse_board::*;
 use chess::{ChessMove, /*Error,*/ Piece, Square};
+use std::str::FromStr;
 
 /// Represent a ChessMove in memory
 #[derive(Clone, Copy, Eq, PartialOrd, PartialEq, Default, Debug, Hash)]
 pub struct BughouseMove {
     source: Option<Square>,
     dest: Square,
-    promotion: Option<Piece>,
+    piece: Option<Piece>, // piggybacking on ChessMove's "promotion" for drops also
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,12 +17,12 @@ impl BughouseMove {
     /// Create a new chess move, given a source `Square`, a destination `Square`, and an optional
     /// promotion `Piece`
     #[inline]
-    pub fn new(
-        source: Option<Square>,
-        dest: Square,
-        promotion: Option<Piece>
-        ) -> Self {
-        BughouseMove { source, dest, promotion }
+    pub fn new(source: Option<Square>, dest: Square, piece: Option<Piece>) -> Self {
+        BughouseMove {
+            source,
+            dest,
+            piece,
+        }
     }
 
     /// Get the source square (square the piece is currently on).
@@ -36,10 +37,18 @@ impl BughouseMove {
         self.dest
     }
 
-    /// Get the promotion piece (maybe).
+    /// Get the drop or pawn promotion piece (maybe).
     #[inline]
-    pub fn get_promotion(&self) -> Option<Piece> {
-        self.promotion
+    pub fn get_piece(&self) -> Option<Piece> {
+        self.piece
+    }
+
+    #[inline]
+    pub fn to_chess_move(&self) -> Option<ChessMove> {
+        match self.source {
+            None => None,
+            Some(src) => Some(ChessMove::new(src, self.dest, self.piece)),
+        }
     }
 
     /// Convert a "BAN", Bughouse-extended (Standard) Algebraic Notation move
@@ -58,7 +67,14 @@ impl BughouseMove {
         board: &BughouseBoard,
         move_text: &str,
     ) -> Result<BughouseMove, MoveParseError> {
-        // TODO handle drops N@e4
+        if let Some(mv) = BughouseMove::from_drop_str(move_text) {
+            return if board.is_legal(mv) {
+                Ok(mv)
+            } else {
+                Err(MoveParseError)
+            };
+        }
+
         match ChessMove::from_san(board.get_board(), move_text) {
             Ok(mv) => Ok(BughouseMove::new(
                 Some(mv.get_source()),
@@ -69,17 +85,43 @@ impl BughouseMove {
         }
     }
 
+    /// Convert drop algebraic notation to BughouseMove
+    /// e.g. drops: "p@f7"
+    pub fn from_drop_str(drop_str: &str) -> Option<Self> {
+        let mut parts = drop_str.split("@");
+        let piece = piece_from_drop_str(parts.next().unwrap_or(""));
+        let dest_sq = Square::from_str(parts.next().unwrap_or(""));
+        if let (Some(piece), Ok(dest_sq)) = (piece, dest_sq) {
+            return Some(BughouseMove::new(
+                None, // drops have no source
+                dest_sq,
+                Some(piece),
+            ));
+        }
+        None
+    }
+
     pub fn from_chess_move(mv: &ChessMove) -> Self {
-        BughouseMove::new(
-            Some(mv.get_source()),
-            mv.get_dest(),
-            mv.get_promotion(),
-        )
+        BughouseMove::new(Some(mv.get_source()), mv.get_dest(), mv.get_promotion())
     }
 }
 
-/// Convert a Bughouse-enabled UCI, BUCI (pronounced "Byoosee" like Gary Busey)
-/// `String` to a move. If invalid, error
+// Upper-case is canonical, but accept both.
+fn piece_from_drop_str(drop_str: &str) -> Option<Piece> {
+    match drop_str {
+        "n" => Some(Piece::Knight),
+        "N" => Some(Piece::Knight),
+        "b" => Some(Piece::Bishop),
+        "B" => Some(Piece::Bishop),
+        "r" => Some(Piece::Rook),
+        "R" => Some(Piece::Rook),
+        "q" => Some(Piece::Queen),
+        "Q" => Some(Piece::Queen),
+        _ => None,
+    }
+}
+
+/// Convert a BUCI, Bughouse-enabled UCI, move
 /// ```
 /// use bughouse::{BughouseMove, Square, Piece};
 /// use std::str::FromStr;
@@ -88,30 +130,17 @@ impl BughouseMove {
 ///
 /// assert_eq!(BughouseMove::from_str("e7e8q").expect("Valid Move"), mv);
 /// ```
-impl FromStr for ChessMove {
+impl FromStr for BughouseMove {
     type Err = MoveParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-
-        match ChessMove::from_str(s) {
-            Ok(m) => BughouseMove::from_chess_move(m)
-            None(m) => BughouseMove::from_chess_move(m)
+        if let Ok(mv) = ChessMove::from_str(s) {
+            return Ok(BughouseMove::from_chess_move(&mv));
+        } else if s.len() == 4 {
+            return BughouseMove::from_drop_str(&s).ok_or(MoveParseError);
         }
-
-        let source = Square::from_str(s.get(0..2).ok_or(Error::InvalidUciMove)?)?;
-        let dest = Square::from_str(s.get(2..4).ok_or(Error::InvalidUciMove)?)?;
-
-        let mut promo = None;
-        if s.len() == 5 {
-            promo = Some(match s.chars().last().ok_or(Error::InvalidUciMove)? {
-                'q' => Piece::Queen,
-                'r' => Piece::Rook,
-                'n' => Piece::Knight,
-                'b' => Piece::Bishop,
-                _ => return Err(Error::InvalidUciMove),
-            });
-        }
-
-        Ok(ChessMove::new(source, dest, promo))
+        // Allow something like "e5n" or "bf7"?  This author prefers unambiguious BPGN... so
+        // not yet
+        return Err(MoveParseError);
     }
 }
