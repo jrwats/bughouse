@@ -38,7 +38,7 @@ impl FromStr for Holdings {
     type Err = HoldingsParseError;
 
     /// Generate Holdings array from a "BFEN" section (0th rank)
-    /// References: 
+    /// References:
     ///   http://www.czechopen.net/en/festival-tournaments/l-bughouse/rules/
     ///   https://bughousedb.com/Lieven_BPGN_Standard.txt
     ///
@@ -77,8 +77,8 @@ fn empty_position() {
 #[test]
 fn random_position() {
     let res: Result<Holdings, _> = Holdings::from_str("BrpBBqppN");
-    assert!(res.unwrap() == Holdings { 
-        holdings: [ 
+    assert!(res.unwrap() == Holdings {
+        holdings: [
             [0, 1, 3, 0, 0], // white
             [3, 0, 0, 1, 1],  //black
         ]

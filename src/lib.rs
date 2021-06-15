@@ -11,6 +11,9 @@ pub use crate::bughouse_move::*;
 mod bughouse_board;
 pub use crate::bughouse_board::*;
 
+mod bughouse_game;
+pub use crate::bughouse_game::*;
+
 #[cfg(test)]
 mod tests {
     #[test]

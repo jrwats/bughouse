@@ -89,21 +89,40 @@ impl FromStr for BughouseBoard {
     // Parse 0th rank style FEN holdings (like Lichess' Crazhouse) https://bit.ly/3wx5R3V
     // Future: Add support for suffix holdings (ala chess.com)?
     // Expects only 1 board
-    // r2k1r2/pbppNppp/1p2p1nb/1P5N/3N4/4Pn1q/PPP1QP1P/2KR2R1/BrpBBqppN w - - 45 56 
+    // r2k1r2/pbppNppp/1p2p1nb/1P5N/3N4/4Pn1q/PPP1QP1P/2KR2R1/BrpBBqppN w - - 45 56
     //   The above ^^^ is only one board, (presplit on " | ")
     fn from_str(input_str: &str) -> Result<Self, Self::Err> {
-        // Maybe tolerate only 7 slashes and infer empty holdings?
-        if input_str.matches("/").count() != 8 {
+        // Tolerate only 7 slashes and infer empty holdings
+        let count = input_str.matches("/").count();
+        if count < 7 || count > 8 {
             return Err(BoardParseError);
         }
         let (bugboard_str, rest) = input_str.split_at(input_str.find(' ').unwrap());
-        let (board_part, holdings_str) = bugboard_str.rsplit_once('/').unwrap();
-        let mut board_str = String::from(board_part);
+        let (board_part, holdings_str) = if count == 8 {
+             bugboard_str.rsplit_once('/').unwrap()
+        } else {
+            (bugboard_str, "")
+        };
+        let mut board_str = String::from(board_part.replace('~', ""));
         board_str.push_str(rest);
         let holdings = Holdings::from_str(holdings_str).unwrap();
         let board = Board::from_str(&board_str).unwrap();
         Ok(BughouseBoard::new(board, holdings))
     }
+}
+
+#[test]
+fn parse_promoted_piece() {
+    let bug_board = BughouseBoard::from_str("Q~4rk1/8/8/8/8/8/8/R3K2R w KQ - 45 60").unwrap();
+    let board = Board::from_str("Q4rk1/8/8/8/8/8/8/R3K2R w KQ - 0 1").unwrap();
+    let holdings_ex = Holdings::new(&[[0; 5]; 2]);
+    assert!(*bug_board.get_holdings() == Holdings::from_str("").unwrap());
+    assert!(*bug_board.get_holdings() == holdings_ex);
+
+    assert!(bug_board.get_board().side_to_move() == chess::Color::White);
+    println!("bb bd: {:?}", bug_board.get_board());
+    println!("board: {:?}", board);
+    assert!(*bug_board.get_board() == board);
 }
 
 #[test]
@@ -113,8 +132,6 @@ fn parse_example_board() {
     let holdings_ex = Holdings::new(&[[0, 1, 3, 0, 0], [3, 0, 0, 1, 1]]);
     assert!(*bug_board.get_holdings() == Holdings::from_str("BrpBBqppN").unwrap());
     assert!(*bug_board.get_holdings() == holdings_ex);
-
-    assert!(bug_board.get_board().side_to_move() == Color::White);
     assert!(*bug_board.get_board() == board.unwrap());
 }
 
@@ -122,15 +139,7 @@ fn parse_example_board() {
 fn parse_default_board() {
     // Empty holdings
     let bug_board = BughouseBoard::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR/ w KQkq - 0 1").unwrap();
-    let holdings_ex = Holdings::new(&[[0; 5]; 2]);
     let default_board = Board::default();
-
     assert!(*bug_board.get_holdings() == Holdings::from_str("").unwrap());
-    assert!(*bug_board.get_holdings() == holdings_ex);
-
-    assert!(bug_board.get_board().side_to_move() == Color::White);
-
-    println!("default: {:?}", default_board);
-    println!("bb def: {:?}", bug_board.get_board());
     assert!(*bug_board.get_board() == default_board);
 }
