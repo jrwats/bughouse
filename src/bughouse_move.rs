@@ -60,7 +60,7 @@ impl BughouseMove {
     /// let board = BughouseBoard::default();
     /// assert_eq!(
     ///     BughouseMove::from_ban(&board, "e4").expect("e4 is valid in the initial position"),
-    ///     ChessMove::new(Square::E2, Square::E4, None)
+    ///     BughouseMove::new(Some(Square::E2), Square::E4, None)
     /// );
     /// ```
     pub fn from_ban(
@@ -126,7 +126,7 @@ fn piece_from_drop_str(drop_str: &str) -> Option<Piece> {
 /// use bughouse::{BughouseMove, Square, Piece};
 /// use std::str::FromStr;
 ///
-/// let mv = BughouseMove::new(Square::E7, Square::E8, Some(Piece::Queen));
+/// let mv = BughouseMove::new(Some(Square::E7), Square::E8, Some(Piece::Queen));
 ///
 /// assert_eq!(BughouseMove::from_str("e7e8q").expect("Valid Move"), mv);
 /// ```

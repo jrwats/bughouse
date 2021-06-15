@@ -16,6 +16,10 @@ pub struct Holdings {
 }
 
 impl Holdings {
+    pub fn new(holdings: &HeldArray) -> Self {
+        Holdings { holdings: *holdings }
+    }
+
     pub fn has_piece(&self, color: Color, piece: Piece) -> bool {
         self.holdings[color.to_index()][piece.to_index()] > 0
     }
