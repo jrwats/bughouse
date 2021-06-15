@@ -15,6 +15,12 @@ pub struct Holdings {
     holdings: HeldArray,
 }
 
+impl Holdings {
+    pub fn has_piece(&self, color: Color, piece: Piece) -> bool {
+        self.holdings[color.to_index()][piece.to_index()] > 0
+    }
+}
+
 /// Construct the initial position.
 impl Default for Holdings {
     #[inline]
