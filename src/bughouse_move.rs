@@ -68,7 +68,7 @@ impl BughouseMove {
         move_text: &str,
     ) -> Result<BughouseMove, MoveParseError> {
         if let Some(mv) = BughouseMove::from_drop_str(move_text) {
-            return if board.is_legal(mv) {
+            return if board.is_legal(&mv) {
                 Ok(mv)
             } else {
                 Err(MoveParseError)

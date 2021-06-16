@@ -21,6 +21,10 @@ impl BughouseBoard {
         &self.holdings
     }
 
+    pub fn holdings(&self) -> Holdings {
+        self.holdings
+    }
+
     #[inline]
     pub fn get_board(&self) -> &Board {
         &self.board
@@ -73,7 +77,21 @@ impl BughouseBoard {
         between(checker_sq, self.king_square()) & BitBoard::from_square(drop_sq) != EMPTY
     }
 
-    pub fn is_legal(&self, mv: BughouseMove) -> bool {
+    pub fn make_move(&mut self, mv: &BughouseMove) -> Result<(), ()> {
+        if self.is_legal(mv) {
+            if mv.get_source() == None {
+                let piece = mv.get_piece().unwrap();
+                if let Err(_) = self.holdings.drop(self.board.side_to_move(), piece) {
+                    return Err(());
+                }
+            }
+            self.board = self.board.make_move_new(mv.to_chess_move().unwrap());
+            return Ok(());
+        }
+        Err(())
+    }
+
+    pub fn is_legal(&self, mv: &BughouseMove) -> bool {
         if mv.get_source() != None {
             if None == mv.get_piece() {
                 // Invalid drop

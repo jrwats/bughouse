@@ -23,6 +23,24 @@ impl Holdings {
     pub fn has_piece(&self, color: Color, piece: Piece) -> bool {
         self.holdings[color.to_index()][piece.to_index()] > 0
     }
+
+    pub fn drop(&mut self, color: Color, piece: Piece) -> Result<(), ()>{
+        let color_idx = color.to_index();
+        let piece_idx = piece.to_index();
+        let cur_val = self.holdings[color_idx][piece_idx];
+        if cur_val > 0 {
+            self.holdings[color_idx][piece_idx] = cur_val - 1;
+            return Ok(());
+        }
+        return Err(());
+    }
+
+    pub fn add(&mut self, color: Color, piece: Piece) {
+        let color_idx = color.to_index();
+        let piece_idx = piece.to_index();
+        self.holdings[color_idx][piece_idx] = 
+            self.holdings[color_idx][piece_idx] + 1;
+    }   
 }
 
 /// Construct the initial position.
