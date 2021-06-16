@@ -1,6 +1,6 @@
 use crate::bughouse_move::BughouseMove;
 use crate::holdings::*;
-use chess::{between, BitBoard, Board, Color, Piece, Square, EMPTY};
+use chess::{between, BitBoard, Board, BoardStatus, Piece, Square, EMPTY};
 use std::str::FromStr;
 
 /// A representation of one Bughouse board.
@@ -43,6 +43,22 @@ impl BughouseBoard {
         *self.board.checkers() != EMPTY
     }
 
+    fn king_square(&self) -> Square {
+        self.board.king_square(self.board.side_to_move())
+    }
+
+    pub fn is_mated(&self) -> bool {
+        // Disregard checkmates that have an an interposition
+        let checkers = self.board.checkers();
+        if self.board.status() != BoardStatus::Checkmate {
+            return false;
+        }
+        let sq = checkers.to_square();
+        return checkers.popcnt() > 1 ||
+            self.board.piece_on(sq).unwrap() == Piece::Knight ||
+            between(sq, self.king_square()) == EMPTY;
+    }
+
     fn blocks_check(&self, drop_sq: Square) -> bool {
         let checkers = self.board.checkers();
         // You can't block double check
@@ -54,8 +70,7 @@ impl BughouseBoard {
         if piece != Piece::Knight {
             return false;
         }
-        let ksq = self.board.king_square(self.board.side_to_move());
-        between(checker_sq, ksq) & BitBoard::from_square(drop_sq) != EMPTY
+        between(checker_sq, self.king_square()) & BitBoard::from_square(drop_sq) != EMPTY
     }
 
     pub fn is_legal(&self, mv: BughouseMove) -> bool {
@@ -80,6 +95,29 @@ impl BughouseBoard {
     }
 }
 
+#[test]
+fn mated_but_not_in_bughouse() {
+    let nonmates = [
+        "3k4/8/8/8/8/8/r/q1K5 w - - - -",
+    ];
+    for bstr in &nonmates {
+        println!("str: {}", bstr);
+        assert!(!BughouseBoard::from_str(bstr).unwrap().is_mated());
+    }
+}
+
+#[test]
+fn mated_in_bughouse() {
+    let mates = [
+        "3k4/8/8/8/8/8/r/qK6 w - - - -",
+        "3k2r1/8/8/8/8/8/5nr1/7K w - - - -"
+    ];
+    for bstr in &mates {
+        println!("str: {}", bstr);
+        assert!(BughouseBoard::from_str(bstr).unwrap().is_mated());
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BoardParseError;
 
@@ -91,6 +129,7 @@ impl FromStr for BughouseBoard {
     // Expects only 1 board
     // r2k1r2/pbppNppp/1p2p1nb/1P5N/3N4/4Pn1q/PPP1QP1P/2KR2R1/BrpBBqppN w - - 45 56
     //   The above ^^^ is only one board, (presplit on " | ")
+    // Dropping support for clock times (in seconds) here as its better handled at the server level
     fn from_str(input_str: &str) -> Result<Self, Self::Err> {
         // Tolerate only 7 slashes and infer empty holdings
         let count = input_str.matches("/").count();
@@ -118,10 +157,7 @@ fn parse_promoted_piece() {
     let holdings_ex = Holdings::new(&[[0; 5]; 2]);
     assert!(*bug_board.get_holdings() == Holdings::from_str("").unwrap());
     assert!(*bug_board.get_holdings() == holdings_ex);
-
     assert!(bug_board.get_board().side_to_move() == chess::Color::White);
-    println!("bb bd: {:?}", bug_board.get_board());
-    println!("board: {:?}", board);
     assert!(*bug_board.get_board() == board);
 }
 
