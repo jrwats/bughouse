@@ -126,11 +126,11 @@ impl BughouseBoard {
         // Invalid drop
         return false;
       }
-      // A drop move.
-      // 1. Validate player has the piece in "holdings" or "reserves"
-      // 2. Ensure it's not atop another piece
-      // 3. Ensure the player isn't in check, or
-      // 4. The drop blocks check
+      // A drop move. Ensure that:
+      // 1. Player to move has the piece in "holdings" or "reserves"
+      // 2. No piece is already there
+      // 3. Either (a) the player isn't in check, or
+      // 4.        (b) the drop blocks the check
       let piece = mv.get_piece().unwrap();
       self.holdings.has_piece(self.board.side_to_move(), piece)
         && self.board.piece_on(mv.get_dest()) == None
