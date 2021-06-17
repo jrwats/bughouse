@@ -3,12 +3,12 @@ use crate::bughouse_move::BughouseMove;
 use std::str::FromStr;
 
 #[derive(PartialEq, Eq, Ord, PartialOrd, Copy, Clone, Debug, Hash)]
-pub enum BoardName {
+pub enum BoardID {
     A,
     B,
 }
 
-impl BoardName {
+impl BoardID {
     /// Convert the `BoardName ` to a `usize` for table lookups.
     #[inline]
     pub fn to_index(&self) -> usize {
@@ -16,11 +16,11 @@ impl BoardName {
     }
 }
 
-impl BoardName {
-    pub fn other(name: BoardName) -> Self {
+impl BoardID {
+    pub fn other(name: BoardID) -> Self {
         match name {
-            BoardName::A => BoardName::B,
-            BoardName::B => BoardName::A,
+            BoardID::A => BoardID::B,
+            BoardID::B => BoardID::A,
         }
     }
 }
@@ -43,9 +43,14 @@ impl BughouseGame {
         BughouseGame { boards: [a, b] }
     }
 
+    pub fn get_board(&self, id: BoardID) -> &BughouseBoard {
+        &self.boards[id.to_index()]
+    }
+
+
     pub fn make_move(
         &mut self,
-        name: BoardName,
+        name: BoardID,
         mv: &BughouseMove,
     ) -> Result<(), InvalidMove> {
         let bug_board = &mut self.boards[name.to_index()];
@@ -92,6 +97,13 @@ impl FromStr for BughouseGame {
     }
 }
 
+// Pretty print each board
+// impl fmt::Display for BughouseMove {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         
+//     }
+// }
+
 #[cfg(test)]
 use crate::Holdings;
 
@@ -102,31 +114,31 @@ use crate::bughouse_move::get_mv;
 fn opening_game() {
     let mut game = BughouseGame::default();
     println!("beg a: {:?}", game.boards[0]);
-    game.make_move(BoardName::A, &get_mv("e2e4")).unwrap();
+    game.make_move(BoardID::A, &get_mv("e2e4")).unwrap();
     println!("end a: {:?}", game.boards[0]);
     let color = game.boards[0].get_board().side_to_move();
     assert!(color == chess::Color::Black);
-    game.make_move(BoardName::A, &get_mv("e7e5")).unwrap();
+    game.make_move(BoardID::A, &get_mv("e7e5")).unwrap();
 }
 
 #[test]
 fn short_bug_game() {
     let mut game = BughouseGame::default();
     let moves = [
-        (BoardName::A, get_mv("e2e4")), // e4
-        (BoardName::A, get_mv("e7e5")), // e5
-        (BoardName::A, get_mv("f1c4")), // Bc4
-        (BoardName::A, get_mv("b8c6")), // Nc6
-        (BoardName::A, get_mv("c4f7")), // Bxf7
-        (BoardName::A, get_mv("e8f7")), // Kxf7
-        (BoardName::A, get_mv("g1f3")), // Nf3
-        (BoardName::A, get_mv("f7e8")), // Ne7
-        (BoardName::A, get_mv("f3g5")), // Ng5+
-        (BoardName::A, get_mv("g8e7")), // Ke8
-        (BoardName::B, get_mv("e2e4")), // e4
-        (BoardName::B, get_mv("d7d5")), // d5
-        (BoardName::B, get_mv("e4d5")), // exd5
-        (BoardName::B, get_mv("d8d5")), // Qxd5
+        (BoardID::A, get_mv("e2e4")), // e4
+        (BoardID::A, get_mv("e7e5")), // e5
+        (BoardID::A, get_mv("f1c4")), // Bc4
+        (BoardID::A, get_mv("b8c6")), // Nc6
+        (BoardID::A, get_mv("c4f7")), // Bxf7
+        (BoardID::A, get_mv("e8f7")), // Kxf7
+        (BoardID::A, get_mv("g1f3")), // Nf3
+        (BoardID::A, get_mv("f7e8")), // Ne7
+        (BoardID::A, get_mv("f3g5")), // Ng5+
+        (BoardID::A, get_mv("g8e7")), // Ke8
+        (BoardID::B, get_mv("e2e4")), // e4
+        (BoardID::B, get_mv("d7d5")), // d5
+        (BoardID::B, get_mv("e4d5")), // exd5
+        (BoardID::B, get_mv("d8d5")), // Qxd5
     ];
     for (name, mv) in &moves {
         game.make_move(*name, &mv).unwrap();
@@ -135,6 +147,6 @@ fn short_bug_game() {
     // Each white player has a pawn
     let expected_holdings = Holdings::new(&[[1, 0, 0, 0, 0]; 2]);
     assert!(*game.boards[0].get_holdings() == expected_holdings);
-    assert!(game.make_move(BoardName::A, &get_mv("P@f7")).is_ok());
+    assert!(game.make_move(BoardID::A, &get_mv("P@f7")).is_ok());
     assert!(game.boards[0].is_mated());
 }
