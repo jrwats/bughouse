@@ -1,9 +1,8 @@
 use crate::bughouse_board::{BughouseBoard, InvalidMove};
-use crate::promotions::Promotions;
 use crate::bughouse_move::BughouseMove;
-use chess::{BitBoard, Piece, Square, EMPTY};
+use chess::Piece;
 use std::str::FromStr;
-use std::fmt;
+// use std::fmt;
 
 #[derive(PartialEq, Eq, Ord, PartialOrd, Copy, Clone, Debug, Hash)]
 pub enum BoardID {
@@ -106,6 +105,12 @@ impl FromStr for BughouseGame {
 
 #[cfg(test)]
 use crate::Holdings;
+
+#[cfg(test)]
+use crate::Promotions;
+
+#[cfg(test)]
+use chess::{BitBoard, EMPTY, Square};
 
 #[cfg(test)]
 use crate::bughouse_move::get_mv;
