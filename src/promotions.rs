@@ -47,7 +47,7 @@ impl Promotions {
 
     pub fn from_fen(fen: &str) -> Promotions {
         let mut bit_boards = [EMPTY; 2];
-        for (row, rank) in fen.split('/').zip((0..8_usize).rev()) {
+        for (row, rank_idx) in fen.split('/').zip((0..8_usize).rev()) {
             let mut file_idx = 0;
             let mut last_color = Color::White;
             for ch in row.chars() {
@@ -65,10 +65,10 @@ impl Promotions {
                     }
                     '~' => {
                         let file = File::from_index(file_idx - 1);
-                        let sq =
-                            Square::make_square(Rank::from_index(rank), file);
-                        bit_boards[last_color.to_index()] |=
-                            BitBoard::from_square(sq);
+                        let rank = Rank::from_index(rank_idx);
+                        let sq = Square::make_square(rank, file);
+                        let bitboard = BitBoard::from_square(sq);
+                        bit_boards[last_color.to_index()] |= bitboard;
                     }
                     _ => {}
                 }
@@ -94,10 +94,5 @@ pub struct PromotionsParseError {
 #[test]
 fn parse_promos() {
     let promos = Promotions::from_fen("Q~4rk1/8/8/8/8/8/8/R3K2R");
-    println!("promos: {:?}", promos);
-    println!("sq: {:?}", promos.promos[0].to_square());
-    for (i, r) in (0..8_usize).zip((0..8_usize).map(|i| Rank::from_index(i))) {
-        println!("idx: {}, rank: {:?}", i, r);
-    }
     assert!(promos.is_promo(Color::White, Square::A8));
 }
