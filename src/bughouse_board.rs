@@ -186,7 +186,7 @@ pub struct BoardParseError;
 impl FromStr for BughouseBoard {
     type Err = BoardParseError;
 
-    // Parse 0th rank style FEN holdings (like Lichess' Crazhouse) https://bit.ly/3wx5R3V
+    // Parse 0th rank style FEN holdings (like Lichess' Crazyhouse) https://bit.ly/3wx5R3V
     // Future: Add support for suffix holdings (ala chess.com)?
     // Expects only 1 board
     // r2k1r2/pbppNppp/1p2p1nb/1P5N/3N4/4Pn1q/PPP1QP1P/2KR2R1/BrpBBqppN w - - 45 56
