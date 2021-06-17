@@ -1,7 +1,9 @@
-use chess::{BitBoard, Color, ChessMove, EMPTY, File, NUM_COLORS, Rank, Square};
+use chess::{
+    BitBoard, ChessMove, Color, File, Rank, Square, EMPTY, NUM_COLORS,
+};
 
 type PromoArray = [BitBoard; NUM_COLORS];
-fn empty() -> PromoArray  {
+fn empty() -> PromoArray {
     [EMPTY; NUM_COLORS]
 }
 
@@ -14,9 +16,7 @@ pub struct Promotions {
 
 impl Promotions {
     pub fn new(promos: &PromoArray) -> Self {
-        Promotions {
-            promos: *promos,
-        }
+        Promotions { promos: *promos }
     }
 
     pub fn is_promo(&self, color: Color, sq: Square) -> bool {
@@ -52,16 +52,25 @@ impl Promotions {
             let mut last_color = Color::White;
             for ch in row.chars() {
                 match ch {
-                    '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' =>
-                        file_idx += (ch as usize) - ('0' as usize),
-                    'p'|'n'|'b'|'r'|'q'|'k' => { last_color = Color::Black; file_idx += 1; },
-                    'P'|'N'|'B'|'R'|'Q'|'K' => { last_color = Color::White; file_idx += 1; },
+                    '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {
+                        file_idx += (ch as usize) - ('0' as usize)
+                    }
+                    'p' | 'n' | 'b' | 'r' | 'q' | 'k' => {
+                        last_color = Color::Black;
+                        file_idx += 1;
+                    }
+                    'P' | 'N' | 'B' | 'R' | 'Q' | 'K' => {
+                        last_color = Color::White;
+                        file_idx += 1;
+                    }
                     '~' => {
                         let file = File::from_index(file_idx - 1);
-                        let sq = Square::make_square(Rank::from_index(rank), file);
-                        bit_boards[last_color.to_index()] |= BitBoard::from_square(sq);
+                        let sq =
+                            Square::make_square(Rank::from_index(rank), file);
+                        bit_boards[last_color.to_index()] |=
+                            BitBoard::from_square(sq);
                     }
-                    _ => {},
+                    _ => {}
                 }
             }
         }

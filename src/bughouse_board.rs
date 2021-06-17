@@ -1,6 +1,6 @@
 use crate::bughouse_move::BughouseMove;
-use crate::promotions::Promotions;
 use crate::holdings::*;
+use crate::promotions::Promotions;
 use chess::{
     between, BitBoard, Board, BoardBuilder, BoardStatus, Piece, Square, EMPTY,
 };
@@ -18,7 +18,11 @@ pub struct BughouseBoard {
 
 impl BughouseBoard {
     pub fn new(board: Board, holdings: Holdings, promos: Promotions) -> Self {
-        BughouseBoard { board, holdings, promos }
+        BughouseBoard {
+            board,
+            holdings,
+            promos,
+        }
     }
 
     /// Get the source square (square the piece is currently on).
@@ -40,7 +44,7 @@ impl BughouseBoard {
     pub fn get_promos(&self) -> &Promotions {
         &self.promos
     }
- }
+}
 
 /// Construct the initial position.
 impl Default for BughouseBoard {
@@ -154,7 +158,7 @@ impl BughouseBoard {
 
     pub fn to_bfen(&self) -> String {
         // TODO
-       "".to_string()
+        "".to_string()
     }
 }
 
@@ -181,7 +185,6 @@ fn mated_in_bughouse() {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BoardParseError;
-
 
 impl FromStr for BughouseBoard {
     type Err = BoardParseError;
@@ -241,74 +244,76 @@ impl FromStr for BughouseBoard {
 //     }
 // }
 
-#[test]
-fn parse_promoted_piece() {
-    let bug_board =
-        BughouseBoard::from_str("Q~4rk1/8/8/8/8/8/8/R3K2R w KQ - 45 60")
-            .unwrap();
-    let board = Board::from_str("Q4rk1/8/8/8/8/8/8/R3K2R w KQ - 0 1").unwrap();
-    let holdings_ex = Holdings::new(&[[0; 5]; 2]);
-    assert!(*bug_board.get_holdings() == Holdings::from_str("").unwrap());
-    assert!(*bug_board.get_holdings() == holdings_ex);
-    assert!(bug_board.get_board().side_to_move() == chess::Color::White);
-    assert!(*bug_board.get_board() == board);
-}
-
-#[test]
-fn parse_example_board() {
-    let bug_board = BughouseBoard::from_str("r2k1r2/pbppNppp/1p2p1nb/1P5N/3N4/4Pn1q/PPP1QP1P/2KR2R1/BrpBBqppN w - - 45 56").unwrap();
-    let board = Board::from_str(
-        "r2k1r2/pbppNppp/1p2p1nb/1P5N/3N4/4Pn1q/PPP1QP1P/2KR2R1 w - - 0 1",
-    );
-    let holdings_ex1 = Holdings::from_str("BrpBBqppN").unwrap();
-    assert!(*bug_board.get_holdings() == holdings_ex1);
-    let holdings_ex = Holdings::new(&[[0, 1, 3, 0, 0], [3, 0, 0, 1, 1]]);
-    assert!(*bug_board.get_holdings() == holdings_ex);
-    assert!(*bug_board.get_board() == board.unwrap());
-}
-
-#[test]
-fn parse_default_board() {
-    // Empty holdings
-    let bug_board = BughouseBoard::from_str(
-        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR/ w KQkq - 0 1",
-    )
-    .unwrap();
-    let default_board = Board::default();
-    assert!(*bug_board.get_holdings() == Holdings::from_str("").unwrap());
-    assert!(*bug_board.get_board() == default_board);
-}
-
 #[cfg(test)]
-use crate::bughouse_move::get_mv;
+mod test {
+    use super::*;
+    use crate::bughouse_move::get_mv;
+    use chess::{Color, Piece};
 
-#[cfg(test)]
-use chess::Color;
-
-#[test]
-fn make_some_moves() {
-    let mut board = BughouseBoard::default();
-    board.make_move(&get_mv("e2e4")).unwrap();
-    assert!(board.board.side_to_move() == Color::Black);
-    assert!(board.make_move(&get_mv("e7e5")).is_ok());
-    assert!(board.board.side_to_move() == Color::White);
-}
-
-#[test]
-fn catch_invalid_moves() {
-    let mut board = BughouseBoard::default();
-    board.make_move(&get_mv("e2e4")).unwrap();
-    assert!(board.make_move(&get_mv("e2e4")).is_err());
-}
-
-#[test]
-fn test_holdings_mutability() {
-    let mut board = BughouseBoard::default();
-    let expected_holdings = Holdings::new(&[[0, 1, 0, 0, 0], [0; 5]]);
-    {
-        let holdings = board.holdings();
-        holdings.add(Color::White, Piece::Knight);
-        assert!(*holdings == expected_holdings);
+    #[test]
+    fn parse_promoted_piece() {
+        let bug_board =
+            BughouseBoard::from_str("Q~4rk1/8/8/8/8/8/8/R3K2R w KQ - 45 60")
+                .unwrap();
+        let board =
+            Board::from_str("Q4rk1/8/8/8/8/8/8/R3K2R w KQ - 0 1").unwrap();
+        let holdings_ex = Holdings::new(&[[0; 5]; 2]);
+        assert!(*bug_board.get_holdings() == Holdings::from_str("").unwrap());
+        assert!(*bug_board.get_holdings() == holdings_ex);
+        assert!(bug_board.get_board().side_to_move() == chess::Color::White);
+        assert!(*bug_board.get_board() == board);
     }
-    assert!(*board.get_holdings() == expected_holdings);
+
+    #[test]
+    fn parse_example_board() {
+        let bug_board = BughouseBoard::from_str("r2k1r2/pbppNppp/1p2p1nb/1P5N/3N4/4Pn1q/PPP1QP1P/2KR2R1/BrpBBqppN w - - 45 56").unwrap();
+        let board = Board::from_str(
+            "r2k1r2/pbppNppp/1p2p1nb/1P5N/3N4/4Pn1q/PPP1QP1P/2KR2R1 w - - 0 1",
+        );
+        let holdings_ex1 = Holdings::from_str("BrpBBqppN").unwrap();
+        assert!(*bug_board.get_holdings() == holdings_ex1);
+        let holdings_ex = Holdings::new(&[[0, 1, 3, 0, 0], [3, 0, 0, 1, 1]]);
+        assert!(*bug_board.get_holdings() == holdings_ex);
+        assert!(*bug_board.get_board() == board.unwrap());
+    }
+
+    #[test]
+    fn parse_default_board() {
+        // Empty holdings
+        let bug_board = BughouseBoard::from_str(
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR/ w KQkq - 0 1",
+        )
+        .unwrap();
+        let default_board = Board::default();
+        assert!(*bug_board.get_holdings() == Holdings::from_str("").unwrap());
+        assert!(*bug_board.get_board() == default_board);
+    }
+
+    #[test]
+    fn make_some_moves() {
+        let mut board = BughouseBoard::default();
+        board.make_move(&get_mv("e2e4")).unwrap();
+        assert!(board.board.side_to_move() == Color::Black);
+        assert!(board.make_move(&get_mv("e7e5")).is_ok());
+        assert!(board.board.side_to_move() == Color::White);
+    }
+
+    #[test]
+    fn catch_invalid_moves() {
+        let mut board = BughouseBoard::default();
+        board.make_move(&get_mv("e2e4")).unwrap();
+        assert!(board.make_move(&get_mv("e2e4")).is_err());
+    }
+
+    #[test]
+    fn test_holdings_mutability() {
+        let mut board = BughouseBoard::default();
+        let expected_holdings = Holdings::new(&[[0, 1, 0, 0, 0], [0; 5]]);
+        {
+            let holdings = board.holdings();
+            holdings.add(Color::White, Piece::Knight);
+            assert!(*holdings == expected_holdings);
+        }
+        assert!(*board.get_holdings() == expected_holdings);
+    }
 }

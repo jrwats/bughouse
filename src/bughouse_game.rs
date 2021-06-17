@@ -58,7 +58,9 @@ impl BughouseGame {
         bug_board.make_move(mv)?;
         if let Some(piece) = captured_piece {
             let other_board = &mut self.boards[1 - name.to_index()];
-            other_board.holdings().add(opp, if is_promo { Piece::Pawn } else { piece });
+            other_board
+                .holdings()
+                .add(opp, if is_promo { Piece::Pawn } else { piece });
         }
         return Ok(());
     }
@@ -104,79 +106,84 @@ impl FromStr for BughouseGame {
 // }
 
 #[cfg(test)]
-use crate::Holdings;
+mod test {
+    use super::*;
+    use crate::bughouse_move::get_mv;
+    use crate::Holdings;
+    use crate::Promotions;
+    use chess::{BitBoard, Square, EMPTY};
 
-#[cfg(test)]
-use crate::Promotions;
-
-#[cfg(test)]
-use chess::{BitBoard, EMPTY, Square};
-
-#[cfg(test)]
-use crate::bughouse_move::get_mv;
-
-#[test]
-fn opening_game() {
-    let mut game = BughouseGame::default();
-    println!("beg a: {:?}", game.boards[0]);
-    game.make_move(BoardID::A, &get_mv("e2e4")).unwrap();
-    println!("end a: {:?}", game.boards[0]);
-    let color = game.boards[0].get_board().side_to_move();
-    assert!(color == chess::Color::Black);
-    game.make_move(BoardID::A, &get_mv("e7e5")).unwrap();
-}
-
-#[test]
-fn short_bug_game() {
-    let mut game = BughouseGame::default();
-    let moves = [
-        (BoardID::A, get_mv("e2e4")), // e4
-        (BoardID::A, get_mv("e7e5")), // e5
-        (BoardID::A, get_mv("f1c4")), // Bc4
-        (BoardID::A, get_mv("b8c6")), // Nc6
-        (BoardID::A, get_mv("c4f7")), // Bxf7
-        (BoardID::A, get_mv("e8f7")), // Kxf7
-        (BoardID::A, get_mv("g1f3")), // Nf3
-        (BoardID::A, get_mv("f7e8")), // Ne7
-        (BoardID::A, get_mv("f3g5")), // Ng5+
-        (BoardID::A, get_mv("g8e7")), // Ke8
-        (BoardID::B, get_mv("e2e4")), // e4
-        (BoardID::B, get_mv("d7d5")), // d5
-        (BoardID::B, get_mv("e4d5")), // exd5
-        (BoardID::B, get_mv("d8d5")), // Qxd5
-    ];
-    for (name, mv) in &moves {
-        game.make_move(*name, &mv).unwrap();
+    #[test]
+    fn opening_game() {
+        let mut game = BughouseGame::default();
+        println!("beg a: {:?}", game.boards[0]);
+        game.make_move(BoardID::A, &get_mv("e2e4")).unwrap();
+        println!("end a: {:?}", game.boards[0]);
+        let color = game.boards[0].get_board().side_to_move();
+        assert!(color == chess::Color::Black);
+        game.make_move(BoardID::A, &get_mv("e7e5")).unwrap();
     }
-    assert!(!game.boards[0].is_mated());
-    // Each white player has a pawn
-    let expected_holdings = Holdings::new(&[[1, 0, 0, 0, 0]; 2]);
-    assert!(*game.boards[0].get_holdings() == expected_holdings);
-    assert!(game.make_move(BoardID::A, &get_mv("P@f7")).is_ok());
-    assert!(game.boards[0].is_mated());
-}
 
-#[test]
-fn tracking_promos() {
-    let bfen = format!(
-        "{} | {}",
-        "4k3/7P/8/q78/8/PPPPPPP/RNBQKBNR/ w - - - -",
-        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR/nnbbrrpppppppp w - - - -",
+    #[test]
+    fn short_bug_game() {
+        let mut game = BughouseGame::default();
+        let moves = [
+            (BoardID::A, get_mv("e2e4")), // e4
+            (BoardID::A, get_mv("e7e5")), // e5
+            (BoardID::A, get_mv("f1c4")), // Bc4
+            (BoardID::A, get_mv("b8c6")), // Nc6
+            (BoardID::A, get_mv("c4f7")), // Bxf7
+            (BoardID::A, get_mv("e8f7")), // Kxf7
+            (BoardID::A, get_mv("g1f3")), // Nf3
+            (BoardID::A, get_mv("f7e8")), // Ne7
+            (BoardID::A, get_mv("f3g5")), // Ng5+
+            (BoardID::A, get_mv("g8e7")), // Ke8
+            (BoardID::B, get_mv("e2e4")), // e4
+            (BoardID::B, get_mv("d7d5")), // d5
+            (BoardID::B, get_mv("e4d5")), // exd5
+            (BoardID::B, get_mv("d8d5")), // Qxd5
+        ];
+        for (name, mv) in &moves {
+            game.make_move(*name, &mv).unwrap();
+        }
+        assert!(!game.boards[0].is_mated());
+        // Each white player has a pawn
+        let expected_holdings = Holdings::new(&[[1, 0, 0, 0, 0]; 2]);
+        assert!(*game.boards[0].get_holdings() == expected_holdings);
+        assert!(game.make_move(BoardID::A, &get_mv("P@f7")).is_ok());
+        assert!(game.boards[0].is_mated());
+    }
+
+    #[test]
+    fn tracking_promos() {
+        let bfen = format!(
+            "{} | {}",
+            "4k3/7P/8/q78/8/PPPPPPP/RNBQKBNR/ w - - - -",
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR/nnbbrrpppppppp w - - - -",
+            );
+        let mut game = BughouseGame::from_str(&bfen).unwrap();
+        assert!(game.make_move(BoardID::A, &get_mv("h7h8q")).is_ok());
+        let expected_promos =
+            Promotions::new(&[BitBoard::from_square(Square::H8), EMPTY]);
+        assert!(*game.get_board(BoardID::A).get_promos() == expected_promos);
+        assert!(game.make_move(BoardID::A, &get_mv("e8e7")).is_ok());
+        assert!(game.make_move(BoardID::A, &get_mv("h8h5")).is_ok());
+        let expected_promos =
+            Promotions::new(&[BitBoard::from_square(Square::H5), EMPTY]);
+        assert!(*game.get_board(BoardID::A).get_promos() == expected_promos);
+        println!("holdings: {:?}", game.get_board(BoardID::B).get_holdings());
+        assert!(
+            *game.get_board(BoardID::B).get_holdings()
+                == Holdings::new(&[[0; 5], [8, 2, 2, 2, 0]])
         );
-    let mut game = BughouseGame::from_str(&bfen).unwrap();
-    assert!(game.make_move(BoardID::A, &get_mv("h7h8q")).is_ok());
-    let expected_promos = Promotions::new(&[BitBoard::from_square(Square::H8), EMPTY]);
-    assert!(*game.get_board(BoardID::A).get_promos() == expected_promos);
-    assert!(game.make_move(BoardID::A, &get_mv("e8e7")).is_ok());
-    assert!(game.make_move(BoardID::A, &get_mv("h8h5")).is_ok());
-    let expected_promos = Promotions::new(&[BitBoard::from_square(Square::H5), EMPTY]);
-    assert!(*game.get_board(BoardID::A).get_promos() == expected_promos);
-    println!("holdings: {:?}", game.get_board(BoardID::B).get_holdings());
-    assert!(*game.get_board(BoardID::B).get_holdings() == Holdings::new(&[[0;5],[8,2,2,2,0]]));
-    assert!(game.make_move(BoardID::A, &get_mv("a5h5")).is_ok());
+        assert!(game.make_move(BoardID::A, &get_mv("a5h5")).is_ok());
 
-    // Queen goes back as pawn
-    assert!(*game.get_board(BoardID::B).get_holdings() == Holdings::new(&[[1,0,0,0,0],[8,2,2,2,0]]));
-    let expected_promos = Promotions::new(&[EMPTY, EMPTY]);
-    assert!(*game.get_board(BoardID::A).get_promos() == expected_promos);
+        // Queen goes back as pawn
+        assert!(
+            *game.get_board(BoardID::B).get_holdings()
+                == Holdings::new(&[[1, 0, 0, 0, 0], [8, 2, 2, 2, 0]])
+        );
+        let expected_promos = Promotions::new(&[EMPTY, EMPTY]);
+        assert!(*game.get_board(BoardID::A).get_promos() == expected_promos);
+    }
 }
