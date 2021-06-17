@@ -1,7 +1,9 @@
 use crate::bughouse_board::{BughouseBoard, InvalidMove};
+use crate::promotions::Promotions;
 use crate::bughouse_move::BughouseMove;
-use chess::Piece;
+use chess::{BitBoard, Piece, Square, EMPTY};
 use std::str::FromStr;
+use std::fmt;
 
 #[derive(PartialEq, Eq, Ord, PartialOrd, Copy, Clone, Debug, Hash)]
 pub enum BoardID {
@@ -14,15 +16,6 @@ impl BoardID {
     #[inline]
     pub fn to_index(&self) -> usize {
         *self as usize
-    }
-}
-
-impl BoardID {
-    pub fn other(name: BoardID) -> Self {
-        match name {
-            BoardID::A => BoardID::B,
-            BoardID::B => BoardID::A,
-        }
     }
 }
 
@@ -48,6 +41,9 @@ impl BughouseGame {
         &self.boards[id.to_index()]
     }
 
+    // TODO
+    // pub fn is_sane(&self) -> bool {
+    // }
 
     pub fn make_move(
         &mut self,
@@ -153,4 +149,29 @@ fn short_bug_game() {
     assert!(*game.boards[0].get_holdings() == expected_holdings);
     assert!(game.make_move(BoardID::A, &get_mv("P@f7")).is_ok());
     assert!(game.boards[0].is_mated());
+}
+
+#[test]
+fn tracking_promos() {
+    let bfen = format!(
+        "{} | {}",
+        "4k3/7P/8/q78/8/PPPPPPP/RNBQKBNR/ w - - - -",
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR/nnbbrrpppppppp w - - - -",
+        );
+    let mut game = BughouseGame::from_str(&bfen).unwrap();
+    assert!(game.make_move(BoardID::A, &get_mv("h7h8q")).is_ok());
+    let expected_promos = Promotions::new(&[BitBoard::from_square(Square::H8), EMPTY]);
+    assert!(*game.get_board(BoardID::A).get_promos() == expected_promos);
+    assert!(game.make_move(BoardID::A, &get_mv("e8e7")).is_ok());
+    assert!(game.make_move(BoardID::A, &get_mv("h8h5")).is_ok());
+    let expected_promos = Promotions::new(&[BitBoard::from_square(Square::H5), EMPTY]);
+    assert!(*game.get_board(BoardID::A).get_promos() == expected_promos);
+    println!("holdings: {:?}", game.get_board(BoardID::B).get_holdings());
+    assert!(*game.get_board(BoardID::B).get_holdings() == Holdings::new(&[[0;5],[8,2,2,2,0]]));
+    assert!(game.make_move(BoardID::A, &get_mv("a5h5")).is_ok());
+
+    // Queen goes back as pawn
+    assert!(*game.get_board(BoardID::B).get_holdings() == Holdings::new(&[[1,0,0,0,0],[8,2,2,2,0]]));
+    let expected_promos = Promotions::new(&[EMPTY, EMPTY]);
+    assert!(*game.get_board(BoardID::A).get_promos() == expected_promos);
 }
