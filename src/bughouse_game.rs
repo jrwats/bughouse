@@ -1,5 +1,6 @@
 use crate::bughouse_board::{BughouseBoard, InvalidMove};
 use crate::bughouse_move::BughouseMove;
+use chess::Piece;
 use std::str::FromStr;
 
 #[derive(PartialEq, Eq, Ord, PartialOrd, Copy, Clone, Debug, Hash)]
@@ -54,12 +55,15 @@ impl BughouseGame {
         mv: &BughouseMove,
     ) -> Result<(), InvalidMove> {
         let bug_board = &mut self.boards[name.to_index()];
-        let captured_piece = bug_board.get_board().piece_on(mv.get_dest());
-        let captured_color = bug_board.get_board().color_on(mv.get_dest());
+        let chess_board = bug_board.get_board();
+        let dest = mv.get_dest();
+        let captured_piece = chess_board.piece_on(dest);
+        let opp = !chess_board.side_to_move();
+        let is_promo = bug_board.get_promos().is_promo(opp, dest);
         bug_board.make_move(mv)?;
         if let Some(piece) = captured_piece {
             let other_board = &mut self.boards[1 - name.to_index()];
-            other_board.holdings().add(captured_color.unwrap(), piece);
+            other_board.holdings().add(opp, if is_promo { Piece::Pawn } else { piece });
         }
         return Ok(());
     }
@@ -100,7 +104,7 @@ impl FromStr for BughouseGame {
 // Pretty print each board
 // impl fmt::Display for BughouseMove {
 //     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         
+//
 //     }
 // }
 

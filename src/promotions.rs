@@ -1,4 +1,4 @@
-use chess::{Color, BitBoard, EMPTY, File, NUM_COLORS, Rank, Square};
+use chess::{BitBoard, Color, ChessMove, EMPTY, File, NUM_COLORS, Rank, Square};
 
 type PromoArray = [BitBoard; NUM_COLORS];
 fn empty() -> PromoArray  {
@@ -23,8 +23,26 @@ impl Promotions {
         self.promos[color.to_index()] & BitBoard::from_square(sq) != EMPTY
     }
 
+    pub fn add_square(&mut self, color: Color, sq: Square) {
+        self.promos[color.to_index()] |= BitBoard::from_square(sq);
+    }
+
     pub fn clear_square(&mut self, color: Color, sq: Square) {
         self.promos[color.to_index()] &= !BitBoard::from_square(sq);
+    }
+
+    pub fn record_move(&mut self, mover: Color, mv: ChessMove) {
+        if mv.get_promotion().is_some() {
+            self.add_square(mover, mv.get_dest());
+            return;
+        }
+        if self.is_promo(mover, mv.get_source()) {
+            self.clear_square(mover, mv.get_source());
+            self.add_square(mover, mv.get_dest());
+        }
+        // If a promoted piece was captured, clear it now.  (BughouseBoard is expected to already
+        // update holdings correctly before callings this)
+        self.clear_square(!mover, mv.get_dest());
     }
 
     pub fn from_fen(fen: &str) -> Promotions {
@@ -34,7 +52,7 @@ impl Promotions {
             let mut last_color = Color::White;
             for ch in row.chars() {
                 match ch {
-                    '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' =>  
+                    '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' =>
                         file_idx += (ch as usize) - ('0' as usize),
                     'p'|'n'|'b'|'r'|'q'|'k' => { last_color = Color::Black; file_idx += 1; },
                     'P'|'N'|'B'|'R'|'Q'|'K' => { last_color = Color::White; file_idx += 1; },

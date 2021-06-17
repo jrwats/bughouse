@@ -35,7 +35,12 @@ impl BughouseBoard {
     pub fn get_board(&self) -> &Board {
         &self.board
     }
-}
+
+    #[inline]
+    pub fn get_promos(&self) -> &Promotions {
+        &self.promos
+    }
+ }
 
 /// Construct the initial position.
 impl Default for BughouseBoard {
@@ -117,8 +122,9 @@ impl BughouseBoard {
                 }
                 return Err(InvalidMove::new(mv, "Illegal move"));
             } else {
-                self.board =
-                    self.board.make_move_new(mv.to_chess_move().unwrap());
+                let chess_mv = mv.to_chess_move().unwrap();
+                self.promos.record_move(self.board.side_to_move(), chess_mv);
+                self.board = self.board.make_move_new(chess_mv);
             }
             return Ok(());
         }
@@ -209,7 +215,7 @@ impl FromStr for BughouseBoard {
 }
 
 // ICS
-//      
+//
 //    +-------------------------------+
 // 8  | *R|   |   | *R|   |   | *K|   |
 //    |---+---+---+---+---+---+---+---|
@@ -217,21 +223,21 @@ impl FromStr for BughouseBoard {
 //    |---+---+---+---+---+---+---+---|
 // 6  |   |   |   |   | *Q|   |   |   |
 //    |---+---+---+---+---+---+---+---|
-// 5  |   |   |   | B | P |   |   |   |     
+// 5  |   |   |   | B | P |   |   |   |
 //    |---+---+---+---+---+---+---+---|
-// 4  |   |   | P |   |   |   |   |   |     
+// 4  |   |   | P |   |   |   |   |   |
 //    |---+---+---+---+---+---+---+---|
-// 3  |   | P |   |   |   |   |   |   |     
+// 3  |   | P |   |   |   |   |   |   |
 //    |---+---+---+---+---+---+---+---|
-// 2  | P |   |   |   |   | P | P | P |     
+// 2  | P |   |   |   |   | P | P | P |
 //    |---+---+---+---+---+---+---+---|
 // 1  | R |   | B |   | R |   | K |   |
 //    +-------------------------------+
 //      a   b   c   d   e   f   g   h
 // impl fmt::Display for BughouseBoard {
 //     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         
-//         
+//
+//
 //     }
 // }
 
