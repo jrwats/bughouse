@@ -1,21 +1,24 @@
 use crate::bughouse_move::BughouseMove;
+use crate::promotions::Promotions;
 use crate::holdings::*;
 use chess::{
     between, BitBoard, Board, BoardBuilder, BoardStatus, Piece, Square, EMPTY,
 };
 use std::convert::TryFrom;
 use std::str::FromStr;
+// use std::fmt;
 
 /// A representation of one Bughouse board.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct BughouseBoard {
     board: Board,
     holdings: Holdings,
+    promos: Promotions,
 }
 
 impl BughouseBoard {
-    pub fn new(board: Board, holdings: Holdings) -> Self {
-        BughouseBoard { board, holdings }
+    pub fn new(board: Board, holdings: Holdings, promos: Promotions) -> Self {
+        BughouseBoard { board, holdings, promos }
     }
 
     /// Get the source square (square the piece is currently on).
@@ -41,6 +44,7 @@ impl Default for BughouseBoard {
         BughouseBoard {
             holdings: Holdings::default(),
             board: Board::default(),
+            promos: Promotions::default(),
         }
     }
 }
@@ -141,6 +145,11 @@ impl BughouseBoard {
             self.board.legal(mv.to_chess_move().unwrap())
         }
     }
+
+    pub fn to_bfen(&self) -> String {
+        // TODO
+       "".to_string()
+    }
 }
 
 #[test]
@@ -167,6 +176,7 @@ fn mated_in_bughouse() {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BoardParseError;
 
+
 impl FromStr for BughouseBoard {
     type Err = BoardParseError;
 
@@ -176,7 +186,7 @@ impl FromStr for BughouseBoard {
     // r2k1r2/pbppNppp/1p2p1nb/1P5N/3N4/4Pn1q/PPP1QP1P/2KR2R1/BrpBBqppN w - - 45 56
     //   The above ^^^ is only one board, (presplit on " | ")
     // Dropping support for clock times (in seconds) here as its better handled at the server level
-    fn from_str(input_str: &str) -> Result<Self, Self::Err> {
+    fn from_str(input_str: &str) -> Result<Self, BoardParseError> {
         // Tolerate only 7 slashes and infer empty holdings
         let count = input_str.matches("/").count();
         if count < 7 || count > 8 {
@@ -193,14 +203,15 @@ impl FromStr for BughouseBoard {
         board_str.push_str(rest);
         let holdings = Holdings::from_str(holdings_str).unwrap();
         let board = Board::from_str(&board_str).unwrap();
-        Ok(BughouseBoard::new(board, holdings))
+        let promotions = Promotions::from_fen(board_part);
+        Ok(BughouseBoard::new(board, holdings, promotions))
     }
 }
 
 // ICS
-//
-//    ---------------------------------
-// 8  | *R|   |   | *R|   |   | *K|   |     Move # : 21 (Black)
+//      
+//    +-------------------------------+
+// 8  | *R|   |   | *R|   |   | *K|   |
 //    |---+---+---+---+---+---+---+---|
 // 7  | *P| Q |   | *N| *B| *P| *P| *P|     White Moves : 'Bd5     (0:31)'
 //    |---+---+---+---+---+---+---+---|
@@ -215,13 +226,14 @@ impl FromStr for BughouseBoard {
 // 2  | P |   |   |   |   | P | P | P |     
 //    |---+---+---+---+---+---+---+---|
 // 1  | R |   | B |   | R |   | K |   |
-//    ---------------------------------
+//    +-------------------------------+
 //      a   b   c   d   e   f   g   h
-impl fmt::Display for BughouseMove {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        
-    }
-}
+// impl fmt::Display for BughouseBoard {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         
+//         
+//     }
+// }
 
 #[test]
 fn parse_promoted_piece() {

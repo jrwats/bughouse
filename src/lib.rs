@@ -5,6 +5,9 @@ pub use chess::*;
 mod holdings;
 pub use crate::holdings::*;
 
+mod promotions;
+pub use crate::promotions::*;
+
 mod bughouse_move;
 pub use crate::bughouse_move::*;
 
