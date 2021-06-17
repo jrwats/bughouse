@@ -97,19 +97,14 @@ fn empty_position() {
     assert!(res.unwrap() == Holdings::default());
 }
 
-// BrpBBqppN
 #[test]
 fn random_position() {
     let res: Result<Holdings, _> = Holdings::from_str("BrpBBqppN");
-    assert!(
-        res.unwrap()
-            == Holdings {
-                holdings: [
-                    [0, 1, 3, 0, 0], // white
-                    [3, 0, 0, 1, 1], //black
-                ]
-            }
-    );
+    let expected_holdings = [
+        [0, 1, 3, 0, 0], // white
+        [3, 0, 0, 1, 1], // black
+    ];
+    assert!(res.unwrap() == Holdings::new(&expected_holdings));
 }
 
 // BrpBBqppN
