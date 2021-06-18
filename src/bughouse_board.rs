@@ -100,12 +100,10 @@ impl BughouseBoard {
             return false;
         }
         let checker_sq = checkers.to_square();
-        let piece = self.board.piece_on(checker_sq).unwrap();
-        if piece != Piece::Knight {
-            return false;
-        }
-        between(checker_sq, self.king_square()) & BitBoard::from_square(drop_sq)
-            != EMPTY
+        return self.board.piece_on(checker_sq).unwrap() != Piece::Knight
+            && (between(checker_sq, self.king_square())
+                & BitBoard::from_square(drop_sq)
+                != EMPTY);
     }
 
     pub fn make_move(&mut self, mv: &BughouseMove) -> Result<(), InvalidMove> {
@@ -315,5 +313,18 @@ mod test {
             assert!(*holdings == expected_holdings);
         }
         assert!(*board.get_holdings() == expected_holdings);
+    }
+
+    #[test]
+    fn test_drops_blocks_check() {
+        let cases = [
+            ("3k4/8/8/8/8/8/8/K6q/N w - - 45 56", Square::B1, true),
+            ("3k4/8/8/8/8/8/2n/K6q/N w - - 45 56", Square::B1, false),
+        ];
+        for (bug_str, sq, expected) in &cases {
+            let board = BughouseBoard::from_str(bug_str).unwrap();
+            assert!(board.blocks_check(*sq) == *expected);
+
+        }
     }
 }
