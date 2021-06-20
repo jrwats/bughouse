@@ -1,6 +1,6 @@
 [package]
 name = "bughouse"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["John Watson <jrwats@gmail.com>"]
 edition = "2018"
 description = "This is a bughouse (2v2 Chess) library for tracking game state and validating legal moves"
@@ -13,3 +13,4 @@ license = "MIT"
 
 [dependencies]
 chess = "3.2.0"
+lazy_static = "1.4.0"

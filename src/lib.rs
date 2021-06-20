@@ -1,5 +1,8 @@
 use chess;
 
+#[macro_use]
+extern crate lazy_static;
+
 pub use chess::*;
 
 mod holdings;

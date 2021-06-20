@@ -2,7 +2,8 @@ use crate::bughouse_move::BughouseMove;
 use crate::holdings::*;
 use crate::promotions::Promotions;
 use chess::{
-    between, BitBoard, Board, BoardBuilder, BoardStatus, Piece, Square, EMPTY,
+    between, get_rank, BitBoard, Board, BoardBuilder, BoardStatus, Piece, Rank,
+    Square, EMPTY,
 };
 use std::convert::TryFrom;
 use std::str::FromStr;
@@ -72,6 +73,11 @@ impl InvalidMove {
     }
 }
 
+lazy_static! {
+    static ref BAD_PAWN_RANKS: BitBoard =
+        get_rank(Rank::Eighth) | get_rank(Rank::First);
+}
+
 impl BughouseBoard {
     pub fn in_check(&self) -> bool {
         *self.board.checkers() != EMPTY
@@ -93,7 +99,7 @@ impl BughouseBoard {
             || between(sq, self.king_square()) == EMPTY;
     }
 
-    fn blocks_check(&self, drop_sq: Square) -> bool {
+    fn blocks_check(&self, drop_sq: BitBoard) -> bool {
         let checkers = self.board.checkers();
         // You can't block double check
         if checkers.popcnt() != 1 {
@@ -101,9 +107,7 @@ impl BughouseBoard {
         }
         let checker_sq = checkers.to_square();
         return self.board.piece_on(checker_sq).unwrap() != Piece::Knight
-            && (between(checker_sq, self.king_square())
-                & BitBoard::from_square(drop_sq)
-                != EMPTY);
+            && (between(checker_sq, self.king_square()) & drop_sq != EMPTY);
     }
 
     pub fn make_move(&mut self, mv: &BughouseMove) -> Result<(), InvalidMove> {
@@ -142,12 +146,15 @@ impl BughouseBoard {
             // A drop move. Ensure that:
             // 1. Player to move has the piece in "holdings" or "reserves"
             // 2. No piece is already there
-            // 3. Either (a) the player isn't in check, or
-            // 4.        (b) the drop blocks the check
+            // 3. If it's a pawn, it's only on ranks 2 - 7
+            // 4. Either (a) the player isn't in check, or
+            // 5.        (b) the drop blocks the check
             let piece = mv.get_piece().unwrap();
+            let bb_sq = BitBoard::from_square(mv.get_dest());
             self.holdings.has_piece(self.board.side_to_move(), piece)
                 && self.board.piece_on(mv.get_dest()) == None
-                && (!self.in_check() || self.blocks_check(mv.get_dest()))
+                && (piece != Piece::Pawn || bb_sq & *BAD_PAWN_RANKS == EMPTY)
+                && (!self.in_check() || self.blocks_check(bb_sq))
         } else {
             // TODO get off this expensive implementation
             self.board.legal(mv.to_chess_move().unwrap())
@@ -301,6 +308,11 @@ mod test {
         let mut board = BughouseBoard::default();
         board.make_move(&get_mv("e2e4")).unwrap();
         assert!(board.make_move(&get_mv("e2e4")).is_err());
+
+        // Invalid pawn drop
+        board =
+            BughouseBoard::from_str("k7/8/8/8/8/8/8/K7/P w - - - - ").unwrap();
+        assert!(board.make_move(&get_mv("P@h8")).is_err());
     }
 
     #[test]
@@ -323,8 +335,8 @@ mod test {
         ];
         for (bug_str, sq, expected) in &cases {
             let board = BughouseBoard::from_str(bug_str).unwrap();
-            assert!(board.blocks_check(*sq) == *expected);
-
+            let bb = BitBoard::from_square(*sq);
+            assert!(board.blocks_check(bb) == *expected);
         }
     }
 }
