@@ -8,7 +8,7 @@ description = "This is a bughouse (2v2 Chess) library for tracking game state an
 homepage = "https://github.com/jrwats/bughouse"
 repository = "https://github.com/jrwats/bughouse"
 readme = "README.md"
-keywords = ["bughouse", "chess", "move", "generator"]
+keywords = ["bughouse", "chess", "move", "generator", "validator"]
 license = "MIT"
 
 [dependencies]
