@@ -22,9 +22,6 @@ pub enum Error {
     #[error("Can't parse move: {0}")]
     MoveParseError(String),
     
-    #[error("Invalid FEN string: {}", fen)]
-    InvalidFen { fen: String },
-
     #[error("Unheld Drop: {} {1}", color_to_str(*.0))]
     UnheldDrop(chess::Color, chess::Piece),
 
