@@ -1,4 +1,5 @@
 use crate::bughouse_board::*;
+use crate::error::*;
 use chess::{ChessMove, /*Error,*/ Piece, Square};
 use std::fmt;
 use std::str::FromStr;
@@ -10,9 +11,6 @@ pub struct BughouseMove {
     dest: Square,
     piece: Option<Piece>, // piggybacking on ChessMove's "promotion" for drops also
 }
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MoveParseError;
 
 impl BughouseMove {
     /// Create a new chess move, given a source `Square`, a destination `Square`, and an optional
@@ -71,23 +69,21 @@ impl BughouseMove {
     pub fn from_ban(
         board: &BughouseBoard,
         move_text: &str,
-    ) -> Result<BughouseMove, MoveParseError> {
+    ) -> Result<BughouseMove, Error> {
         if let Some(mv) = BughouseMove::from_drop_str(move_text) {
             return if board.is_legal(&mv) {
                 Ok(mv)
             } else {
-                Err(MoveParseError)
-            };
+                Err(Error::IllegalMove(move_text.to_string()))
+            }
         }
 
-        match ChessMove::from_san(board.get_board(), move_text) {
-            Ok(mv) => Ok(BughouseMove::new(
+        let mv = ChessMove::from_san(board.get_board(), move_text)?;
+        Ok(BughouseMove::new(
                 Some(mv.get_source()),
                 mv.get_dest(),
                 mv.get_promotion(),
-            )),
-            Err(_e) => Err(MoveParseError),
-        }
+                ))
     }
 
     /// Convert drop algebraic notation to BughouseMove
@@ -148,17 +144,17 @@ impl fmt::Display for BughouseMove {
 /// assert_eq!(BughouseMove::from_str("e7e8q").expect("Valid Move"), mv);
 /// ```
 impl FromStr for BughouseMove {
-    type Err = MoveParseError;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Ok(mv) = ChessMove::from_str(s) {
             return Ok(BughouseMove::from_chess_move(&mv));
-        } else if s.len() == 4 {
-            return BughouseMove::from_drop_str(&s).ok_or(MoveParseError);
+        } else if let Some(mv) = BughouseMove::from_drop_str(&s) {
+            return Ok(mv);
         }
         // Allow something like "e5n" or "bf7"?
         // This author prefers unambiguious BPGN... so
-        return Err(MoveParseError);
+        return Err(Error::MoveParseError(s.to_string()));
     }
 }
 

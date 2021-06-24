@@ -5,6 +5,9 @@ extern crate lazy_static;
 
 pub use chess::*;
 
+mod error;
+pub use crate::error::*;
+
 mod holdings;
 pub use crate::holdings::*;
 

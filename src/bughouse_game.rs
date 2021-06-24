@@ -1,5 +1,6 @@
-use crate::bughouse_board::{BughouseBoard, InvalidMove};
+use crate::bughouse_board::BughouseBoard;
 use crate::bughouse_move::BughouseMove;
+use crate::error::*;
 use chess::Piece;
 use std::str::FromStr;
 // use std::fmt;
@@ -48,7 +49,7 @@ impl BughouseGame {
         &mut self,
         name: BoardID,
         mv: &BughouseMove,
-    ) -> Result<(), InvalidMove> {
+    ) -> Result<(), Error> {
         let bug_board = &mut self.boards[name.to_index()];
         let chess_board = bug_board.get_board();
         let dest = mv.get_dest();
@@ -66,34 +67,17 @@ impl BughouseGame {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TableParseError {
-    msg: String,
-}
-
-impl TableParseError {
-    pub fn new(msg: String) -> Self {
-        TableParseError { msg }
-    }
-}
-
 impl FromStr for BughouseGame {
-    type Err = TableParseError;
+    type Err = Error;
 
     /// Note: ignores time input, so flagging will not be handled.
     fn from_str(input_str: &str) -> Result<Self, Self::Err> {
         if let Some((a_str, b_str)) = input_str.split_once(" | ") {
-            match (
-                BughouseBoard::from_str(a_str),
-                BughouseBoard::from_str(b_str),
-            ) {
-                (Ok(board_a), Ok(board_b)) => {
-                    Ok(BughouseGame::new(board_a, board_b))
-                }
-                _ => Err(TableParseError::new("Bad inner BFEN".to_string())),
-            }
+            let board_a = BughouseBoard::from_str(a_str)?;
+            let board_b = BughouseBoard::from_str(b_str)?;
+            Ok(BughouseGame::new(board_a, board_b))
         } else {
-            Err(TableParseError::new("Invalid '|' split".to_string()))
+            Err(Error::GameParseError(format!("Invalid ' | ' split: {}", input_str)))
         }
     }
 }

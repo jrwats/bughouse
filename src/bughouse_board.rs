@@ -1,4 +1,5 @@
 use crate::bughouse_move::BughouseMove;
+use crate::error::*;
 use crate::holdings::*;
 use crate::promotions::Promotions;
 use chess::{
@@ -59,20 +60,6 @@ impl Default for BughouseBoard {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct InvalidMove {
-    bughouse_move: String,
-    reason: String,
-}
-impl InvalidMove {
-    pub fn new(mv: &BughouseMove, reason: &str) -> Self {
-        InvalidMove {
-            bughouse_move: mv.to_string(),
-            reason: reason.to_string(),
-        }
-    }
-}
-
 lazy_static! {
     static ref BAD_PAWN_RANKS: BitBoard =
         get_rank(Rank::Eighth) | get_rank(Rank::First);
@@ -110,23 +97,21 @@ impl BughouseBoard {
             && (between(checker_sq, self.king_square()) & drop_sq != EMPTY);
     }
 
-    pub fn make_move(&mut self, mv: &BughouseMove) -> Result<(), InvalidMove> {
+    pub fn make_move(&mut self, mv: &BughouseMove) -> Result<(), Error> {
         if self.is_legal(mv) {
             if mv.get_source() == None {
                 let piece = mv.get_piece().unwrap();
                 let color = self.board.side_to_move();
-                if let Err(_) = self.holdings.drop(color, piece) {
-                    return Err(InvalidMove::new(mv, "Invalid drop"));
-                }
                 let mut builder = BoardBuilder::from(&self.board);
                 builder[mv.get_dest()] = Some((piece, color));
                 builder.en_passant(None);
                 builder.side_to_move(!self.board.side_to_move());
                 if let Ok(board) = Board::try_from(builder) {
+                    self.holdings.drop(color, piece)?;
                     self.board = board;
                     return Ok(());
                 }
-                return Err(InvalidMove::new(mv, "Illegal move"));
+                return Err(Error::IllegalMove(mv.to_string()));
             } else {
                 let chess_mv = mv.to_chess_move().unwrap();
                 self.promos.record_move(self.board.side_to_move(), chess_mv);
@@ -134,7 +119,7 @@ impl BughouseBoard {
             }
             return Ok(());
         }
-        Err(InvalidMove::new(mv, "Illegal move"))
+        return Err(Error::IllegalMove(mv.to_string()));
     }
 
     pub fn is_legal(&self, mv: &BughouseMove) -> bool {
@@ -188,11 +173,8 @@ fn mated_in_bughouse() {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BoardParseError;
-
 impl FromStr for BughouseBoard {
-    type Err = BoardParseError;
+    type Err = Error;
 
     // Parse 0th rank style FEN holdings (like Lichess' Crazyhouse) https://bit.ly/3wx5R3V
     // Future: Add support for suffix holdings (ala chess.com)?
@@ -200,11 +182,11 @@ impl FromStr for BughouseBoard {
     // r2k1r2/pbppNppp/1p2p1nb/1P5N/3N4/4Pn1q/PPP1QP1P/2KR2R1/BrpBBqppN w - - 45 56
     //   The above ^^^ is only one board, (presplit on " | ")
     // Dropping support for clock times (in seconds) here as its better handled at the server level
-    fn from_str(input_str: &str) -> Result<Self, BoardParseError> {
+    fn from_str(input_str: &str) -> Result<Self, Self::Err> {
         // Tolerate only 7 slashes and infer empty holdings
         let count = input_str.matches("/").count();
         if count < 7 || count > 8 {
-            return Err(BoardParseError);
+            return Err(Error::BoardParseError(input_str.to_string()));
         }
         let (bugboard_str, rest) =
             input_str.split_at(input_str.find(' ').unwrap());

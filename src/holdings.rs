@@ -1,4 +1,5 @@
 use chess::{Color, Piece, NUM_COLORS}; // , NUM_PIECES};
+use crate::error::*;
 use std::str::FromStr;
 
 pub const NUM_HELD_PIECE_TYPES: usize = 5; // P, N, B, R, Q
@@ -25,7 +26,7 @@ impl Holdings {
         self.holdings[color.to_index()][piece.to_index()] > 0
     }
 
-    pub fn drop(&mut self, color: Color, piece: Piece) -> Result<(), ()> {
+    pub fn drop(&mut self, color: Color, piece: Piece) -> Result<(), Error> {
         let color_idx = color.to_index();
         let piece_idx = piece.to_index();
         let cur_val = self.holdings[color_idx][piece_idx];
@@ -33,7 +34,7 @@ impl Holdings {
             self.holdings[color_idx][piece_idx] = cur_val - 1;
             return Ok(());
         }
-        return Err(());
+        return Err(Error::UnheldDrop(color, piece));
     }
 
     pub fn add(&mut self, color: Color, piece: Piece) {
@@ -51,11 +52,8 @@ impl Default for Holdings {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HoldingsParseError(());
-
 impl FromStr for Holdings {
-    type Err = HoldingsParseError;
+    type Err = Error;
 
     /// Generate Holdings array from a "BFEN" section (0th rank)
     /// References:
@@ -81,7 +79,7 @@ impl FromStr for Holdings {
                 'R' => bfen_holdings[white_idx][Piece::Rook.to_index()] += 1,
                 'Q' => bfen_holdings[white_idx][Piece::Queen.to_index()] += 1,
                 _ => {
-                    return Err(HoldingsParseError(()));
+                    return Err(Error::HoldingsParseError(value.to_string()));
                 }
             }
         }
@@ -93,23 +91,22 @@ impl FromStr for Holdings {
 
 #[test]
 fn empty_position() {
-    let res: Result<Holdings, _> = Holdings::from_str("");
-    assert!(res.unwrap() == Holdings::default());
+    let res = Holdings::from_str("").unwrap();
+    assert!(res == Holdings::default());
 }
 
 #[test]
 fn random_position() {
-    let res: Result<Holdings, _> = Holdings::from_str("BrpBBqppN");
+    let res = Holdings::from_str("BrpBBqppN").unwrap();
     let expected_holdings = [
         [0, 1, 3, 0, 0], // white
         [3, 0, 0, 1, 1], // black
     ];
-    assert!(res.unwrap() == Holdings::new(&expected_holdings));
+    assert!(res == Holdings::new(&expected_holdings));
 }
 
 // BrpBBqppN
 #[test]
 fn kings_dont_make_sense() {
-    let res: Result<Holdings, _> = Holdings::from_str("k");
-    assert!(res.is_err());
+    assert!(Holdings::from_str("k").is_err());
 }
