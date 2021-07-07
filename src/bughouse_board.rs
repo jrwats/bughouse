@@ -3,7 +3,7 @@ use crate::error::*;
 use crate::holdings::*;
 use crate::promotions::Promotions;
 use chess::{
-    between, get_rank, BitBoard, Board, BoardBuilder, BoardStatus, Piece, Rank,
+    between, get_rank, BitBoard, Board, BoardBuilder, BoardStatus, Color,  Piece, Rank,
     Square, EMPTY,
 };
 use std::convert::TryFrom;
@@ -120,6 +120,10 @@ impl BughouseBoard {
             return Ok(());
         }
         return Err(Error::IllegalMove(mv.to_string()));
+    }
+
+    pub fn side_to_move(&self) -> Color {
+        self.board.side_to_move()
     }
 
     pub fn is_legal(&self, mv: &BughouseMove) -> bool {
