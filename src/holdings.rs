@@ -1,6 +1,7 @@
-use chess::{Color, Piece, NUM_COLORS}; // , NUM_PIECES};
+use chess::{Color, Piece, ALL_PIECES, ALL_COLORS, NUM_COLORS}; // , NUM_PIECES};
 use crate::error::*;
 use std::str::FromStr;
+use std::fmt;
 
 pub const NUM_HELD_PIECE_TYPES: usize = 5; // P, N, B, R, Q
 
@@ -89,6 +90,22 @@ impl FromStr for Holdings {
     }
 }
 
+impl fmt::Display for Holdings {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut res = String::new();
+        for (c, pieces) in self.holdings.iter().enumerate() {
+            let color = ALL_COLORS[c];
+            for (p, count) in pieces.iter().enumerate() {
+                for _ in 0..*count {
+                    let piece_str = ALL_PIECES[p].to_string(color);
+                    res.push_str(&piece_str);
+                }
+            }
+        }
+        write!(f, "{}", res)
+    }
+}
+
 #[test]
 fn empty_position() {
     let res = Holdings::from_str("").unwrap();
@@ -110,3 +127,12 @@ fn random_position() {
 fn kings_dont_make_sense() {
     assert!(Holdings::from_str("k").is_err());
 }
+
+#[test]
+fn holdings_to_str() {
+    let res = Holdings::from_str("BrpBBqppN").unwrap();
+    let expected_str = "NBBBppprq";
+    assert!(res.to_string()== expected_str);
+}
+
+
