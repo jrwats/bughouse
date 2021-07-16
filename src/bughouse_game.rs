@@ -11,6 +11,9 @@ pub enum BoardID {
     B,
 }
 
+// For moving from index to BoardID
+pub const BOARD_IDS: [BoardID; 2] = [BoardID::A, BoardID::B];
+
 impl BoardID {
     /// Convert the `BoardName ` to a `usize` for table lookups.
     #[inline]
