@@ -3,7 +3,7 @@ use crate::bughouse_move::BughouseMove;
 use crate::error::*;
 use chess::Piece;
 use std::str::FromStr;
-// use std::fmt;
+use std::fmt;
 
 #[derive(PartialEq, Eq, Ord, PartialOrd, Copy, Clone, Debug, Hash)]
 pub enum BoardID {
@@ -13,6 +13,12 @@ pub enum BoardID {
 
 // For moving from index to BoardID
 pub const BOARD_IDS: [BoardID; 2] = [BoardID::A, BoardID::B];
+
+impl fmt::Display for BoardID {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", if *self == Self::A { "A" } else { "B" })
+    }
+}
 
 impl BoardID {
     /// Convert the `BoardName ` to a `usize` for table lookups.
