@@ -163,9 +163,24 @@ pub fn get_mv(mv_str: &str) -> BughouseMove {
     BughouseMove::from_str(mv_str).unwrap()
 }
 
-#[test]
-pub fn test_make_drop() {
-    assert!(BughouseMove::from_str("P@f7").is_ok());
-    assert!(BughouseMove::from_str("q@e5").is_ok());
-    assert!(BughouseMove::from_str("h@e5").is_err());
+#[cfg(test)]
+mod test {
+    use super::*;
+    use chess::Board;
+
+    #[test]
+    pub fn test_make_drop() {
+        assert!(BughouseMove::from_str("P@f7").is_ok());
+        assert!(BughouseMove::from_str("q@e5").is_ok());
+        assert!(BughouseMove::from_str("h@e5").is_err());
+    }
+
+    #[test]
+    pub fn test_promo() {
+        let fen = "rn1qkbnr/pP2pppp/2b5/8/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1";
+        let board = Board::from_str(fen).unwrap();
+        let mv = ChessMove::from_str("b7a8q");
+        assert!(mv.is_ok());
+        assert!(board.legal(mv.unwrap()));
+    }
 }
